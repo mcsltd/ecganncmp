@@ -124,13 +124,13 @@ def _print_records_stats(stats_table):
         for rec in stats_table[db]:
             stats = stats_table[db][rec]
             print(f"{db}, {rec}")
-            print(f"TP: {stats.tp}")
-            print(f"FP: {stats.fp}")
-            print(f"FN: {stats.fn}")
-            print(f"Precision: {stats.precision}")
-            print(f"Recall: {stats.recall}")
-            print(f"F-Score: {stats.fscore}")
-            print(f"Normalized F-score: {stats.norm_f}")
+            print(f"  TP: {stats.tp}")
+            print(f"  FP: {stats.fp}")
+            print(f"  FN: {stats.fn}")
+            print(f"  Precision: {stats.precision}")
+            print(f"  Recall: {stats.recall}")
+            print(f"  F-Score: {stats.fscore}")
+            print(f"  Normalized F-score: {stats.norm_f}\n")
 
 
 def _print_conclusions(marks_table, thesaurus):
