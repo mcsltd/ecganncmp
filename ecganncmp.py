@@ -43,7 +43,7 @@ Thesaurus = namedtuple("Thesaurus", ["label", "lang", "items"])
 
 
 InputData = namedtuple("InputData", [
-    "ref_path", "test_paths", "thesaurus", "full_report", "knorm"
+    "ref_path", "test_paths", "thesaurus", "full_report", "knorm", "summary"
 ])
 
 
@@ -85,13 +85,15 @@ def _parse_args(args):
     parser.add_argument("--thesaurus", required=True, help="Path to thesaurus")
     parser.add_argument("--full", action="store_true")
     parser.add_argument("--knorm", default=_DEFAULT_K_NORM)
+    parser.add_argument("--summary", action="store_true")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
         data.test_paths,
         _parse_thesaurus(data.thesaurus),
         data.full,
-        data.knorm
+        data.knorm,
+        data.summary
     )
 
 
@@ -114,23 +116,17 @@ def _compare(input_data):
 
 def _print_report(result, input_data):
     _print_records_stats(result.stats_table)
-    if not input_data.full_report:
-        return
-    _print_conclusions(result.marks_table, input_data.thesaurus.items)
+    if input_data.full_report:
+        _print_conclusions(result.marks_table, input_data.thesaurus.items)
+    if input_data.summary and _count_records(result.stats_table) > 1:
+        _print_stats(result.total_stats, "Summary", 2)
 
 
 def _print_records_stats(stats_table):
     for db in stats_table:
         for rec in stats_table[db]:
-            stats = stats_table[db][rec]
-            print(f"{db}, {rec}")
-            print(f"  TP: {stats.tp}")
-            print(f"  FP: {stats.fp}")
-            print(f"  FN: {stats.fn}")
-            print(f"  Precision: {stats.precision}")
-            print(f"  Recall: {stats.recall}")
-            print(f"  F-Score: {stats.fscore}")
-            print(f"  Normalized F-score: {stats.norm_f}\n")
+            title = f"{db}, {rec}"
+            _print_stats(stats_table[db][rec], title, 2)
 
 
 def _print_conclusions(marks_table, thesaurus):
@@ -147,6 +143,19 @@ def _print_conclusions(marks_table, thesaurus):
         for c in group:
             if c in thesaurus:
                 print(f"  {thesaurus[c]}")
+
+
+def _print_stats(stats, title="", indent=0):
+    padding = " " * indent
+    if title:
+        print(title)
+    print(f"{padding}TP: {stats.tp}")
+    print(f"{padding}FP: {stats.fp}")
+    print(f"{padding}FN: {stats.fn}")
+    print(f"{padding}Precision: {stats.precision}")
+    print(f"{padding}Recall: {stats.recall}")
+    print(f"{padding}F-Score: {stats.fscore}")
+    print(f"{padding}Normalized F-score: {stats.norm_f}\n")
 
 
 def _is_debug():
@@ -274,6 +283,10 @@ def _marks_to_match_stats(marks, knorm):
         tp, fp, fn, precision, recall, fscore,
         int(fscore * (knorm + 1) / knorm)
     )
+
+
+def _count_records(table):
+    return sum(1 for db in table for rec in table[db])
 
 
 if __name__ == "__main__":
