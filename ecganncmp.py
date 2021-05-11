@@ -7,6 +7,7 @@ import json
 from enum import Enum, auto
 
 _DEFAULT_K_NORM = 5
+# TODO: check required groups
 _REQURED_GROUPS = [
     ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"],
     ["3.1"]
@@ -53,7 +54,7 @@ MatchStats = namedtuple("MatchStats", [
 
 
 CmpResult = namedtuple("CmpResult", [
-    "marks_table", "stats_table", "total_stats",  # "requirement_passed"
+    "marks_table", "stats_table", "total_stats",
 ])
 
 
@@ -117,14 +118,18 @@ def _compare(input_data):
 
 
 def _print_report(result, input_data):
+    footer = ""
     _print_records_stats(result.stats_table)
     if input_data.full_report:
+        footer = _launch_parameters_to_str(input_data)
         _print_conclusions(result.marks_table, input_data.thesaurus.items)
     if input_data.summary and _count_records(result.stats_table) > 1:
         _print_stats(result.total_stats, "Summary", 2)
     if input_data.groups_report:
         _print_groups_report(
             result.marks_table, input_data.thesaurus.data, input_data.knorm)
+    if footer:
+        print(footer)
 
 
 def _print_records_stats(stats_table):
@@ -320,6 +325,28 @@ def _marks_to_stats(marks, knorm):
 
 def _count_records(table):
     return sum(1 for db in table for rec in table[db])
+
+
+def _launch_parameters_to_str(input_data):
+    lines = ["Launch parameters"]
+
+    if input_data.full_report:
+        lines.append("Report format: full")
+    else:
+        lines.append("Report format: short")
+
+    lines.append(f"Normalization factor: {input_data.knorm}")
+
+    if input_data.summary:
+        lines.append("Summary: yes")
+    else:
+        lines.append("Summary: no")
+
+    if input_data.groups_report:
+        lines.append("Groups report: yes")
+    else:
+        lines.append("Groups report: no")
+    return "\n  ".join(lines)
 
 
 if __name__ == "__main__":
