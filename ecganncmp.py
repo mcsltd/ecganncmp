@@ -7,6 +7,10 @@ import json
 from enum import Enum, auto
 
 _DEFAULT_K_NORM = 5
+_REQURED_GROUPS = [
+    ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"],
+    ["3.1"]
+]
 
 
 class Text():
@@ -16,16 +20,11 @@ class Text():
     TYPE = "type"
     CMPRESULT = "cmpresult"
     CONCLUSION_THESAURUS = "conclusionThesaurus"
-    ANNOTATOR = "annotator"
     GROUPS = "groups"
     REPORTS = "reports"
     ID = "id"
     NAME = "name"
     THESAURUS_LABEL = "thesaurus"
-    LANGUAGE = "language"
-    ANNOTATORS = "annotators"
-    CONCLUSIONS_ANNOTATORS = "conclusionsAnnotators"
-    RECORDS = "records"
 
 
 class MatchMarks(Enum):
@@ -39,11 +38,12 @@ class Error(Exception):
         super(Error, self).__init__(message)
 
 
-Thesaurus = namedtuple("Thesaurus", ["label", "lang", "items"])
+Thesaurus = namedtuple("Thesaurus", ["label", "items", "data"])
 
 
 InputData = namedtuple("InputData", [
-    "ref_path", "test_paths", "thesaurus", "full_report", "knorm", "summary"
+    "ref_path", "test_paths", "thesaurus", "full_report", "knorm", "summary",
+    "groups_report"
 ])
 
 
@@ -86,6 +86,7 @@ def _parse_args(args):
     parser.add_argument("--full", action="store_true")
     parser.add_argument("--knorm", default=_DEFAULT_K_NORM)
     parser.add_argument("--summary", action="store_true")
+    parser.add_argument("--groups", action="store_true")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
@@ -93,7 +94,8 @@ def _parse_args(args):
         _parse_thesaurus(data.thesaurus),
         data.full,
         data.knorm,
-        data.summary
+        data.summary,
+        data.groups
     )
 
 
@@ -120,6 +122,9 @@ def _print_report(result, input_data):
         _print_conclusions(result.marks_table, input_data.thesaurus.items)
     if input_data.summary and _count_records(result.stats_table) > 1:
         _print_stats(result.total_stats, "Summary", 2)
+    if input_data.groups_report:
+        _print_groups_report(
+            result.marks_table, input_data.thesaurus.data, input_data.knorm)
 
 
 def _print_records_stats(stats_table):
@@ -158,6 +163,29 @@ def _print_stats(stats, title="", indent=0):
     print(f"{padding}Normalized F-score: {stats.norm_f}\n")
 
 
+def _print_groups_report(marks_table, thesaurus, knorm):
+    item_groups = {}
+    group_names = {}
+    group_marks = OrderedDict()
+    for group in thesaurus[Text.GROUPS]:
+        group_id = group[Text.ID]
+        group_names[group_id] = group[Text.NAME]
+        group_marks[group_id] = []
+        for conc in group[Text.REPORTS]:
+            item_groups[conc[Text.ID]] = group_id
+
+    for db in marks_table:
+        for rec in marks_table[db]:
+            for code, mark in marks_table[db][rec].items():
+                group = item_groups[code]
+                group_marks[group].append(mark)
+    for group_id in group_marks:
+        if not group_marks[group_id]:
+            continue
+        group_stats = _marks_to_stats(group_marks[group_id], knorm)
+        _print_stats(group_stats, group_names[group_id], 2)
+
+
 def _is_debug():
     return getattr(os.sys, 'gettrace', None) is not None
 
@@ -170,8 +198,8 @@ def _parse_thesaurus(filename):
             items[ann[Text.ID]] = ann[Text.NAME]
     return Thesaurus(
         data[Text.THESAURUS_LABEL],
-        data[Text.LANGUAGE],
-        items
+        items,
+        data
     )
 
 
@@ -263,20 +291,25 @@ def _calculate_stats(match_marks, knorm):
         table[db] = {}
         for rec in match_marks[db]:
             record_marks = match_marks[db][rec].values()
-            table[db][rec] = _marks_to_match_stats(record_marks, knorm)
+            table[db][rec] = _marks_to_stats(record_marks, knorm)
             all_marks += record_marks
-    total_stats = _marks_to_match_stats(all_marks, knorm)
+    total_stats = _marks_to_stats(all_marks, knorm)
     return table, total_stats
 
 
-def _marks_to_match_stats(marks, knorm):
+def _marks_to_stats(marks, knorm):
     counts = Counter(marks)
     tp = counts[MatchMarks.TP]
     fp = counts[MatchMarks.FP]
     fn = counts[MatchMarks.FN]
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
+    precision = 0
+    recall = 0
     fscore = 0
+
+    if tp > 0 or fp > 0:
+        precision = tp / (tp + fp)
+    if tp > 0 or fn > 0:
+        recall = tp / (tp + fn)
     if precision > 0 or recall > 0:
         fscore = 2 * precision * recall / (precision + recall)
     return MatchStats(
