@@ -96,11 +96,16 @@ def _parse_args(args):
         help="Path to file or folder with test annotations"
     )
     parser.add_argument("--thesaurus", required=True, help="Path to thesaurus")
-    parser.add_argument("--full", action="store_true")
-    parser.add_argument("--knorm", default=_DEFAULT_K_NORM)
-    parser.add_argument("--summary", action="store_true")
-    parser.add_argument("--groups", action="store_true")
-    parser.add_argument("--lang", default="en", choices=["en", "ru"])
+    parser.add_argument("--full", action="store_true",
+                        help="Enable full report format")
+    parser.add_argument("--knorm", default=_DEFAULT_K_NORM,
+                        help="F-Score normalization factor")
+    parser.add_argument("--summary", action="store_true",
+                        help="Enable summary report (with average statistics)")
+    parser.add_argument("--groups", action="store_true",
+                        help="Enable report for conclusion groups")
+    parser.add_argument("--lang", default="en", choices=["en", "ru"],
+                        help="Select report language")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
