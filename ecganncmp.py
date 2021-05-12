@@ -144,6 +144,11 @@ def _print_records_stats(stats_table, required_groups_flags):
 
 
 def _print_conclusions(marks_table, thesaurus):
+    titles = {
+        MatchMarks.TP: "True",
+        MatchMarks.FP: "Error",
+        MatchMarks.FN: "Missed"
+    }
     mark_groups = defaultdict(set)
     for db_marks in marks_table.values():
         for rec_marks in db_marks.values():
@@ -152,11 +157,12 @@ def _print_conclusions(marks_table, thesaurus):
                     mark_groups[mark].add(code)
     codes_indices = {code: i for i, code in enumerate(thesaurus)}
     for mark, group in mark_groups.items():
-        print(mark.name)
+        print(titles[mark])
         group = sorted(group, key=(lambda code: codes_indices.get(code, 0)))
         for c in group:
             if c in thesaurus:
                 print(f"  {thesaurus[c]}")
+        print("")
 
 
 def _print_stats(stats, title="", indent=0, required_group_missed=False):
