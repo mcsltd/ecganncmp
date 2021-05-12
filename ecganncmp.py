@@ -5,6 +5,10 @@ from collections import namedtuple, OrderedDict, defaultdict, Counter
 import codecs
 import json
 from enum import Enum, auto
+import gettext
+
+_ = gettext.gettext
+
 
 _DEFAULT_K_NORM = 5
 # TODO: check required groups
@@ -44,7 +48,7 @@ Thesaurus = namedtuple("Thesaurus", ["label", "items", "data"])
 
 InputData = namedtuple("InputData", [
     "ref_path", "test_paths", "thesaurus", "full_report", "knorm", "summary",
-    "groups_report"
+    "groups_report", "lang"
 ])
 
 
@@ -61,6 +65,7 @@ CmpResult = namedtuple("CmpResult", [
 def main():
     try:
         input_data = _parse_args(os.sys.argv)
+        _set_language(input_data.lang)
         result = _compare(input_data)
         _print_report(result, input_data)
     except Error as exc:
@@ -73,6 +78,13 @@ def main():
         print(message.format(type(exc).__name__, exc, log_filename))
         with open(log_filename, "wt") as log:
             log.write(traceback.format_exc())
+
+
+def _set_language(lang):
+    global _
+    obj = gettext.translation("base", localedir="locales", languages=[lang])
+    obj.install()
+    _ = obj.gettext
 
 
 def _parse_args(args):
@@ -88,6 +100,7 @@ def _parse_args(args):
     parser.add_argument("--knorm", default=_DEFAULT_K_NORM)
     parser.add_argument("--summary", action="store_true")
     parser.add_argument("--groups", action="store_true")
+    parser.add_argument("--lang", default="en", choices=["en", "ru"])
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
@@ -96,7 +109,8 @@ def _parse_args(args):
         data.full,
         data.knorm,
         data.summary,
-        data.groups
+        data.groups,
+        data.lang
     )
 
 
@@ -126,7 +140,7 @@ def _print_report(result, input_data):
         _print_conclusions(result.marks_table, input_data.thesaurus.items)
     if input_data.summary and _count_records(result.stats_table) > 1:
         stats = _calculate_total_stats(result.marks_table, input_data.knorm)
-        _print_stats(stats, "Summary", 2)
+        _print_stats(stats, _("Summary"), 2)
     if input_data.groups_report:
         _print_groups_report(
             result.marks_table, input_data.thesaurus.data, input_data.knorm)
@@ -145,9 +159,9 @@ def _print_records_stats(stats_table, required_groups_flags):
 
 def _print_conclusions(marks_table, thesaurus):
     titles = {
-        MatchMarks.TP: "True",
-        MatchMarks.FP: "Error",
-        MatchMarks.FN: "Missed"
+        MatchMarks.TP: _("True"),
+        MatchMarks.FP: _("Error"),
+        MatchMarks.FN: _("Missed")
     }
     mark_groups = defaultdict(set)
     for db_marks in marks_table.values():
@@ -169,15 +183,15 @@ def _print_stats(stats, title="", indent=0, required_group_missed=False):
     padding = " " * indent
     if title:
         print(title)
-    print(f"{padding}TP: {stats.tp}")
-    print(f"{padding}FP: {stats.fp}")
-    print(f"{padding}FN: {stats.fn}")
-    print(f"{padding}Precision: {stats.precision}")
-    print(f"{padding}Recall: {stats.recall}")
-    print(f"{padding}F-Score: {stats.fscore}")
-    print(f"{padding}Normalized F-score: {stats.norm_f}")
+
+    fieldnames = [
+        "TP", "FP", "FN", _("Precision"), _("Recall"), _("F-Score"),
+        _("Normalized F-score")
+    ]
+    for i, name in enumerate(fieldnames):
+        print("{0}{1}: {2}".format(padding, name, stats[i]))
     if required_group_missed:
-        print(f"{padding}Required group missed")
+        print("{0}{1}".format(padding, _("Required group missed")))
     print("")
 
 
@@ -366,28 +380,33 @@ def _marks_to_stats(marks, knorm):
 
 
 def _count_records(table):
-    return sum(1 for db in table for rec in table[db])
+    return sum(1 for db in table for _ in table[db])
 
 
 def _launch_parameters_to_str(input_data):
-    lines = ["Launch parameters"]
+    template = "{0}: {1}"
+    lines = [_("Launch parameters")]
 
     if input_data.full_report:
-        lines.append("Report format: full")
+        lines.append(_("Report format: full"))
     else:
-        lines.append("Report format: short")
+        lines.append(_("Report format: short"))
 
-    lines.append(f"Normalization factor: {input_data.knorm}")
+    lines.append(template.format(_("Normalization factor"), input_data.knorm))
 
-    if input_data.summary:
-        lines.append("Summary: yes")
-    else:
-        lines.append("Summary: no")
+    yes = _("yes")
+    no = _("no")
 
-    if input_data.groups_report:
-        lines.append("Groups report: yes")
-    else:
-        lines.append("Groups report: no")
+    head = _("Summary")
+    tail = yes if input_data.summary else no
+    lines.append(template.format(head, tail))
+
+    head = _("Groups report")
+    tail = yes if input_data.groups_report else no
+    lines.append(template.format(head, tail))
+
+    lines.append(template.format(_("Language"), input_data.lang))
+
     return "\n  ".join(lines)
 
 

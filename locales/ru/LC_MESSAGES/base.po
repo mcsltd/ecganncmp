@@ -1,0 +1,85 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2021-05-12 14:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=cp1251\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ecganncmp.py:132 ecganncmp.py:389
+msgid "Summary"
+msgstr "Суммарный отчёт"
+
+#: ecganncmp.py:151
+msgid "True"
+msgstr "Совпадение"
+
+#: ecganncmp.py:152
+msgid "Error"
+msgstr "Ошибочный выбор"
+
+#: ecganncmp.py:153
+msgid "Missed"
+msgstr "Пропуск"
+
+#: ecganncmp.py:177
+msgid "F-Score"
+msgstr "Общая оценка"
+
+#: ecganncmp.py:177
+msgid "Precision"
+msgstr "Точность"
+
+#: ecganncmp.py:177
+msgid "Recall"
+msgstr "Полнота"
+
+#: ecganncmp.py:178
+msgid "Normalized F-score"
+msgstr "Нормализованная оценка"
+
+#: ecganncmp.py:183
+msgid "Required group missed"
+msgstr "Пропущена обязательная группа"
+
+#: ecganncmp.py:377
+msgid "Launch parameters"
+msgstr "Параметры запуска"
+
+#: ecganncmp.py:380
+msgid "Report format: full"
+msgstr "Формат отчёта: полный"
+
+#: ecganncmp.py:382
+msgid "Report format: short"
+msgstr "Формат отчёта: краткий"
+
+#: ecganncmp.py:384
+msgid "Normalization factor"
+msgstr "Коэффициент нормализации оценки"
+
+#: ecganncmp.py:386
+msgid "yes"
+msgstr "да"
+
+#: ecganncmp.py:387
+msgid "no"
+msgstr "нет"
+
+#: ecganncmp.py:393
+msgid "Groups report"
+msgstr "Отчёт по группам"
+
+#: ecganncmp.py:408
+msgid "Language"
+msgstr "Язык"
+
