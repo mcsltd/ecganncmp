@@ -9,7 +9,7 @@ from enum import Enum, auto
 _DEFAULT_K_NORM = 5
 # TODO: check required groups
 _REQURED_GROUPS = [
-    ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"],
+    set(["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"]),
     ["3.1"]
 ]
 
@@ -54,7 +54,7 @@ MatchStats = namedtuple("MatchStats", [
 
 
 CmpResult = namedtuple("CmpResult", [
-    "marks_table", "stats_table", "total_stats",
+    "marks_table", "stats_table", "required_group_flags"
 ])
 
 
@@ -113,18 +113,20 @@ def _compare(input_data):
     if not ref_data or not test_data:
         raise Error("Input files not found")
     match_marks = _calculate_match_table(ref_data, test_data)
-    stats_table, total_stats = _calculate_stats(match_marks, input_data.knorm)
-    return CmpResult(match_marks, stats_table, total_stats)
+    stats_table = _calculate_stats(match_marks, input_data.knorm)
+    required_groups_flags = _check_required_groups(test_data)
+    return CmpResult(match_marks, stats_table, required_groups_flags)
 
 
 def _print_report(result, input_data):
     footer = ""
-    _print_records_stats(result.stats_table)
+    _print_records_stats(result.stats_table, result.required_group_flags)
     if input_data.full_report:
         footer = _launch_parameters_to_str(input_data)
         _print_conclusions(result.marks_table, input_data.thesaurus.items)
     if input_data.summary and _count_records(result.stats_table) > 1:
-        _print_stats(result.total_stats, "Summary", 2)
+        stats = _calculate_total_stats(result.marks_table, input_data.knorm)
+        _print_stats(stats, "Summary", 2)
     if input_data.groups_report:
         _print_groups_report(
             result.marks_table, input_data.thesaurus.data, input_data.knorm)
@@ -132,11 +134,13 @@ def _print_report(result, input_data):
         print(footer)
 
 
-def _print_records_stats(stats_table):
+def _print_records_stats(stats_table, required_groups_flags):
     for db in stats_table:
         for rec in stats_table[db]:
             title = f"{db}, {rec}"
-            _print_stats(stats_table[db][rec], title, 2)
+            _print_stats(
+                stats_table[db][rec], title, 2,
+                required_group_missed=(not required_groups_flags[db][rec]))
 
 
 def _print_conclusions(marks_table, thesaurus):
@@ -155,7 +159,7 @@ def _print_conclusions(marks_table, thesaurus):
                 print(f"  {thesaurus[c]}")
 
 
-def _print_stats(stats, title="", indent=0):
+def _print_stats(stats, title="", indent=0, required_group_missed=False):
     padding = " " * indent
     if title:
         print(title)
@@ -165,7 +169,10 @@ def _print_stats(stats, title="", indent=0):
     print(f"{padding}Precision: {stats.precision}")
     print(f"{padding}Recall: {stats.recall}")
     print(f"{padding}F-Score: {stats.fscore}")
-    print(f"{padding}Normalized F-score: {stats.norm_f}\n")
+    print(f"{padding}Normalized F-score: {stats.norm_f}")
+    if required_group_missed:
+        print(f"{padding}Required group missed")
+    print("")
 
 
 def _print_groups_report(marks_table, thesaurus, knorm):
@@ -289,17 +296,46 @@ def _calculate_match_table(ref_data, test_data):
     return match_table
 
 
+def _check_required_groups(test_data):
+    results = {}
+    for db in test_data:
+        results[db] = {}
+        for rec in test_data[db]:
+            rec_items = test_data[db][rec]
+            group_flags = [False for _ in _REQURED_GROUPS]
+            for item in rec_items:
+                item_group = _get_group_id(item)
+                for i, groups in enumerate(_REQURED_GROUPS):
+                    if group_flags[i]:
+                        continue
+                    group_flags[i] = item_group in groups
+            results[db][rec] = all(group_flags)
+    return results
+
+
+def _get_group_id(conclision_id):
+    last_point = conclision_id.rfind(".")
+    if last_point < 0:
+        return None
+    return conclision_id[:last_point]
+
+
 def _calculate_stats(match_marks, knorm):
-    all_marks = []
     table = {}
     for db in match_marks:
         table[db] = {}
         for rec in match_marks[db]:
             record_marks = match_marks[db][rec].values()
             table[db][rec] = _marks_to_stats(record_marks, knorm)
-            all_marks += record_marks
-    total_stats = _marks_to_stats(all_marks, knorm)
-    return table, total_stats
+    return table
+
+
+def _calculate_total_stats(match_marks, knorm):
+    all_marks = []
+    for db in match_marks:
+        for rec in match_marks[db]:
+            all_marks += match_marks[db][rec].values()
+    return _marks_to_stats(all_marks, knorm)
 
 
 def _marks_to_stats(marks, knorm):
