@@ -9,9 +9,6 @@ import gettext
 
 _ = gettext.gettext
 
-
-_DEFAULT_K_NORM = 5
-# TODO: check required groups
 _REQURED_GROUPS = [
     set(["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"]),
     ["3.1"]
@@ -98,7 +95,7 @@ def _parse_args(args):
     parser.add_argument("--thesaurus", required=True, help="Path to thesaurus")
     parser.add_argument("--full", action="store_true",
                         help="Enable full report format")
-    parser.add_argument("--knorm", default=_DEFAULT_K_NORM,
+    parser.add_argument("--knorm", type=int, default=None,
                         help="F-Score normalization factor")
     parser.add_argument("--summary", action="store_true",
                         help="Enable summary report (with average statistics)")
@@ -194,7 +191,9 @@ def _print_stats(stats, title="", indent=0, required_group_missed=False):
         _("Normalized F-score")
     ]
     for i, name in enumerate(fieldnames):
-        print("{0}{1}: {2}".format(padding, name, stats[i]))
+        value = stats[i]
+        if value is not None:
+            print("{0}{1}: {2}".format(padding, name, value))
     if required_group_missed:
         print("{0}{1}".format(padding, _("Required group missed")))
     print("")
@@ -363,7 +362,7 @@ def _calculate_total_stats(match_marks, knorm):
     return _marks_to_stats(all_marks, knorm)
 
 
-def _marks_to_stats(marks, knorm):
+def _marks_to_stats(marks, knorm=None):
     counts = Counter(marks)
     tp = counts[MatchMarks.TP]
     fp = counts[MatchMarks.FP]
@@ -378,10 +377,10 @@ def _marks_to_stats(marks, knorm):
         recall = tp / (tp + fn)
     if precision > 0 or recall > 0:
         fscore = 2 * precision * recall / (precision + recall)
-    return MatchStats(
-        tp, fp, fn, precision, recall, fscore,
-        int(fscore * (knorm + 1) / knorm)
-    )
+    norm_fscore = None
+    if knorm is not None:
+        norm_fscore = int(fscore * (knorm + 1) / knorm)
+    return MatchStats(tp, fp, fn, precision, recall, fscore, norm_fscore)
 
 
 def _count_records(table):
@@ -397,7 +396,9 @@ def _launch_parameters_to_str(input_data):
     else:
         lines.append(_("Report format: short"))
 
-    lines.append(template.format(_("Normalization factor"), input_data.knorm))
+    if input_data.knorm is not None:
+        lines.append(
+            template.format(_("Normalization factor"), input_data.knorm))
 
     yes = _("yes")
     no = _("no")
