@@ -20,7 +20,6 @@ class Text():
     DATABASE = "database"
     RECORD_ID = "record"
     TYPE = "type"
-    CMPRESULT = "cmpresult"
     CONCLUSION_THESAURUS = "conclusionThesaurus"
     GROUPS = "groups"
     REPORTS = "reports"
@@ -256,9 +255,11 @@ def _filter_data(data, thesaurus):
     bad = []
     good = []
     for item in data:
-        if item.get(Text.TYPE) == Text.CMPRESULT:
-            bad.append(item)
-        elif item.get(Text.CONCLUSION_THESAURUS) != thesaurus:
+        bad_item = (
+            Text.CONCLUSIONS not in item or
+            item.get(Text.CONCLUSION_THESAURUS) != thesaurus
+        )
+        if bad_item:
             bad.append(item)
         else:
             good.append(item)
