@@ -159,11 +159,11 @@ def _print_records_stats(stats_table, required_groups_flags):
 
 
 def _print_conclusions(marks_table, thesaurus):
-    titles = {
-        MatchMarks.TP: _("True"),
-        MatchMarks.FP: _("Error"),
-        MatchMarks.FN: _("Missed")
-    }
+    titles = OrderedDict([
+        (MatchMarks.TP, _("True")),
+        (MatchMarks.FP, _("Error")),
+        (MatchMarks.FN, _("Missed"))
+    ])
     mark_groups = defaultdict(set)
     for db_marks in marks_table.values():
         for rec_marks in db_marks.values():
@@ -171,9 +171,10 @@ def _print_conclusions(marks_table, thesaurus):
                 if code in thesaurus:
                     mark_groups[mark].add(code)
     codes_indices = {code: i for i, code in enumerate(thesaurus)}
-    for mark, group in mark_groups.items():
-        print(titles[mark])
-        group = sorted(group, key=(lambda code: codes_indices.get(code, 0)))
+    for mark, title in titles.items():
+        print(title)
+        group = sorted(mark_groups[mark],
+                       key=(lambda code: codes_indices.get(code, 0)))
         for c in group:
             if c in thesaurus:
                 print(f"  {thesaurus[c]}")
@@ -192,7 +193,12 @@ def _print_stats(stats, title="", indent=0, required_group_missed=False):
     for i, name in enumerate(fieldnames):
         value = stats[i]
         if value is not None:
-            print("{0}{1}: {2}".format(padding, name, value))
+            template = "{}{}: "
+            if not float(value).is_integer():
+                template += "{:.2f}"
+            else:
+                template += "{}"
+            print(template.format(padding, name, value))
     if required_group_missed:
         print("{0}{1}".format(padding, _("Required group missed")))
     print("")
@@ -380,7 +386,7 @@ def _marks_to_stats(marks, knorm=None):
         fscore = 2 * precision * recall / (precision + recall)
     norm_fscore = None
     if knorm is not None:
-        norm_fscore = int(fscore * (knorm + 1) / knorm)
+        norm_fscore = int(fscore * (knorm + 1 / knorm))
     return MatchStats(tp, fp, fn, precision, recall, fscore, norm_fscore)
 
 
@@ -415,6 +421,14 @@ def _launch_parameters_to_str(input_data):
     lines.append(template.format(_("Language"), input_data.lang))
 
     return "\n  ".join(lines)
+
+
+def _number_to_str(value, precision=None):
+    if precision is None or float(value).is_integer():
+        return str(value)
+    else:
+        return
+
 
 
 if __name__ == "__main__":
