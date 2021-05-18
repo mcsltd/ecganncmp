@@ -54,7 +54,7 @@ MatchStats = namedtuple("MatchStats", [
 
 
 CmpResult = namedtuple("CmpResult", [
-    "marks_table", "stats_table", "required_group_flags"
+    "marks_table", "stats_table", "required_group_flags", "excess_conclusions"
 ])
 
 
@@ -127,10 +127,14 @@ def _compare(input_data):
     test_data = _read_table(thesaurus_label, *input_data.test_paths)
     if not ref_data or not test_data:
         raise Error("Input files not found")
-    match_marks = _calculate_match_table(ref_data, test_data)
+    match_marks, excess_items = _calculate_match_table(
+        ref_data, test_data, input_data.thesaurus.items
+    )
     stats_table = _calculate_stats(match_marks, input_data.knorm)
     required_groups_flags = _check_required_groups(test_data)
-    return CmpResult(match_marks, stats_table, required_groups_flags)
+    return CmpResult(
+        match_marks, stats_table, required_groups_flags, excess_items
+    )
 
 
 def _print_report(result, input_data):
@@ -139,6 +143,7 @@ def _print_report(result, input_data):
     if input_data.full_report:
         footer = _launch_parameters_to_str(input_data)
         _print_conclusions(result.marks_table, input_data.thesaurus.items)
+        _print_excess_conclusions(result.excess_conclusions)
     if input_data.summary and _count_records(result.stats_table) > 1:
         stats = _calculate_total_stats(result.marks_table, input_data.knorm)
         _print_stats(stats, _("Summary"), 2)
@@ -302,7 +307,8 @@ def _read_json_folder(dirname):
     return results
 
 
-def _calculate_match_table(ref_data, test_data):
+def _calculate_match_table(ref_data, test_data, thesaurus):
+    excess_items = set()
     match_table = {}
     for db in ref_data:
         if db not in test_data:
@@ -316,6 +322,11 @@ def _calculate_match_table(ref_data, test_data):
             all_concs = ref_concs.union(test_concs)
             marks = {}
             for code in all_concs:
+                if code in excess_items:
+                    continue
+                if code not in thesaurus:
+                    excess_items.add(code)
+                    continue
                 if code not in ref_concs:
                     marks[code] = MatchMarks.FP
                 else:
@@ -324,7 +335,7 @@ def _calculate_match_table(ref_data, test_data):
                     else:
                         marks[code] = MatchMarks.FN
             match_table[db][rec] = marks
-    return match_table
+    return match_table, list(excess_items)
 
 
 def _check_required_groups(test_data):
@@ -423,12 +434,13 @@ def _launch_parameters_to_str(input_data):
     return "\n  ".join(lines)
 
 
-def _number_to_str(value, precision=None):
-    if precision is None or float(value).is_integer():
-        return str(value)
-    else:
+def _print_excess_conclusions(items):
+    if not items:
         return
-
+    print(_("Items removed from comparison (not found in the thesaurus)"))
+    for it in items:
+        print(f"  {it}")
+    print("")
 
 
 if __name__ == "__main__":

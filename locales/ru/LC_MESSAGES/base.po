@@ -83,3 +83,7 @@ msgstr "ќтчЄт по группам"
 msgid "Language"
 msgstr "язык"
 
+#: ecganncmp.py:440
+msgid "Items removed from comparison (not found in the thesaurus)"
+msgstr "Ёлементы удалЄнные из сравнени€ (не найдены в тезаурусе)"
+
