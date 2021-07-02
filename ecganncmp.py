@@ -91,7 +91,9 @@ def _parse_args(args):
         "test_paths", nargs="+",
         help="Path to file or folder with test annotations"
     )
-    parser.add_argument("--thesaurus", required=True, help="Path to thesaurus")
+    required_group = parser.add_argument_group("required named arguments")
+    required_group.add_argument(
+        "--thesaurus", required=True, help="Path to thesaurus")
     parser.add_argument("--full", action="store_true",
                         help="Enable full report format")
     parser.add_argument("--knorm", type=int, default=None,
@@ -101,7 +103,7 @@ def _parse_args(args):
     parser.add_argument("--groups", action="store_true",
                         help="Enable report for conclusion groups")
     parser.add_argument("--lang", default="en", choices=["en", "ru"],
-                        help="Select report language")
+                        help="Select report language (default: %(default)s)")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
