@@ -93,16 +93,16 @@ def _parse_args(args):
     )
     required_group = parser.add_argument_group("required named arguments")
     required_group.add_argument(
-        "--thesaurus", required=True, help="Path to thesaurus")
-    parser.add_argument("--full", action="store_true",
+        "-t", "--thesaurus", required=True, help="Path to thesaurus")
+    parser.add_argument("-f", "--full", action="store_true",
                         help="Enable full report format")
     parser.add_argument("--knorm", type=int, default=None,
                         help="F-Score normalization factor")
-    parser.add_argument("--summary", action="store_true",
+    parser.add_argument("-s", "--summary", action="store_true",
                         help="Enable summary report (with average statistics)")
-    parser.add_argument("--groups", action="store_true",
+    parser.add_argument("-g", "--groups", action="store_true",
                         help="Enable report for conclusion groups")
-    parser.add_argument("--lang", default="en", choices=["en", "ru"],
+    parser.add_argument("-l", "--lang", default="en", choices=["en", "ru"],
                         help="Select report language (default: %(default)s)")
     data = parser.parse_args(args[1:])
     return InputData(
