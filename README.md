@@ -15,9 +15,9 @@ Python (3.4 or later) must be installed on the user's computer to run the progra
 
 `ref_path`, `test_path` and `--thesaurus` are required arguments. Optional arguments and short description are given below (help message)
 
-    usage: ecganncmp.py [-h] --thesaurus THESAURUS [--full] [--knorm KNORM]
-                    [--summary] [--groups] [--lang {en,ru}]
-                    ref_path test_paths [test_paths ...]
+    usage: ecganncmp.py [-h] -t THESAURUS [-f] [--knorm KNORM] [-s] [-g]
+                        [-l {en,ru}]
+                        ref_path test_paths [test_paths ...]
 
     Annotations comparing
 
@@ -27,14 +27,15 @@ Python (3.4 or later) must be installed on the user's computer to run the progra
 
     optional arguments:
     -h, --help            show this help message and exit
-    --full                Enable full report format
+    -f, --full            Enable full report format
     --knorm KNORM         F-Score normalization factor
-    --summary             Enable summary report (with average statistics)
-    --groups              Enable report for conclusion groups
-    --lang {en,ru}        Select report language (default: en)
+    -s, --summary         Enable summary report (with average statistics)
+    -g, --groups          Enable report for conclusion groups
+    -l {en,ru}, --lang {en,ru}
+                            Select report language (default: en)
 
     required named arguments:
-    --thesaurus THESAURUS
+    -t THESAURUS, --thesaurus THESAURUS
                             Path to thesaurus
 
 See below for arguments details.
