@@ -107,3 +107,9 @@ Summary report example:
     Precision: 0.26
     Recall: 0.28
     F-Score: 0.27
+
+### Groups report
+
+If the `--groups` or `-g` flag is specified, then in the order of the groups, the following information is displayed:
+- group identifier;
+- TP, FP, FN, Precision, Recall, F-Score calculated for this group.
