@@ -48,11 +48,11 @@ The following [terms](https://en.wikipedia.org/wiki/Confusion_matrix) are used w
 - FN &ndash; false negative,
 - Precision &ndash; positive predictive value, 
 
-    RRV = TP / (TP + FP),
+        RRV = TP / (TP + FP),
 
 - Recall &ndash; sensitivity or true positive rate, 
 
-    TPR = TP / (TP + FN).
+        TPR = TP / (TP + FN).
 
 Also used the `F-score` or `F` &ndash; total score of annotations match,  
 
