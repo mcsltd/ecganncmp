@@ -83,3 +83,11 @@ Report example:
       Recall: 0.67
       F-Score: 0.80
       Normalized F-score: 4
+
+### Full report
+
+If the `--full` flag is set, launch flags and a list of statements grouped by type (TP, FP, FN) are added to the report.  
+Subheadings:
+- TP &ndash; True.
+- FP &ndash; Error.
+- FN &ndash; Missed.
