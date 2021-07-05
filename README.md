@@ -39,3 +39,25 @@ Python (3.4 or later) must be installed on the user's computer to run the progra
                             Path to thesaurus
 
 See below for arguments details.
+
+## Output examples
+
+The following [terms](https://en.wikipedia.org/wiki/Confusion_matrix) are used when comparing annotations:
+- TP &ndash; true positiv,  
+- FP &ndash; false positive,
+- FN &ndash; false negative,
+- Precision &ndash; positive predictive value, 
+
+    RRV = TP / (TP + FP),
+
+- Recall &ndash; sensitivity or true positive rate, 
+
+    TPR = TP / (TP + FN).
+
+Also used the `F-score` or `F` &ndash; total score of annotations match,  
+
+    F = (2 * Precision * Recall) / (Precision + Recall).
+
+If the `--knorm` flag is set, the normalized F-score is calculated:
+
+    NFS = round((knorm + 1 / knorm) * F)
