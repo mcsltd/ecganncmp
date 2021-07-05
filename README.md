@@ -61,3 +61,25 @@ Also used the `F-score` or `F` &ndash; total score of annotations match,
 If the `--knorm` flag is set, the normalized F-score is calculated:
 
     NFS = round((knorm + 1 / knorm) * F)
+
+### Main report
+
+The main (default) report displays information on each considered annotation (record), includes:
+- record identifier;
+- the number of statements of each type TP, FP, FN;
+- Precision;
+- Recall;
+- F-score;
+- flag of absence of conclusions on required groups;
+- normalized F-score, if necessary.
+
+Report example:
+
+    CSE Common Standards for ECG, MA1_007
+      TP: 2
+      FP: 0
+      FN: 1
+      Precision: 1.0
+      Recall: 0.67
+      F-Score: 0.80
+      Normalized F-score: 4
