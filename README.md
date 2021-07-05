@@ -86,7 +86,7 @@ Report example:
 
 ### Full report
 
-If the `--full` flag is set, launch flags and a list of statements grouped by type (TP, FP, FN) are added to the report.  
+If the `--full` or `-f` flag is set, launch flags and a list of statements grouped by type (TP, FP, FN) are added to the report.  
 Subheadings:
 - TP &ndash; True.
 - FP &ndash; Error.
@@ -94,7 +94,7 @@ Subheadings:
 
 ### Summary report
 
-The summary report can be output only when comparing sets of annotation. If the `--summary` flag is set at startup, then the following are displayed:
+The summary report can be output only when comparing sets of annotation. If the `--summary` or `-s` flag is set at startup, then the following are displayed:
 - total values of TP, FP, FN;
 - Precision and Recall calculated for total TP, FP, FN;
 - F-score (normalized, if necessary) calculated for total Precision and Recall.
