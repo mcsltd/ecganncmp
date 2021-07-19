@@ -44,7 +44,7 @@ Thesaurus = namedtuple("Thesaurus", ["label", "items", "data"])
 
 InputData = namedtuple("InputData", [
     "ref_path", "test_paths", "thesaurus", "full_report", "knorm", "summary",
-    "groups_report", "lang"
+    "groups_report", "lang", "group_unions"
 ])
 
 
@@ -113,7 +113,8 @@ def _parse_args(args):
         data.knorm,
         data.summary,
         data.groups,
-        data.lang
+        data.lang,
+        None
     )
 
 
@@ -130,7 +131,8 @@ def _compare(input_data):
     if not ref_data or not test_data:
         raise Error("Input files not found")
     match_marks, excess_items = _calculate_match_table(
-        ref_data, test_data, input_data.thesaurus.items
+        ref_data, test_data, input_data.thesaurus.items,
+        input_data.group_unions
     )
     stats_table = _calculate_stats(match_marks, input_data.knorm)
     required_groups_flags = _check_required_groups(test_data)
