@@ -309,7 +309,7 @@ def _read_json_folder(dirname):
     return results
 
 
-def _calculate_match_table(ref_data, test_data, thesaurus):
+def _calculate_match_table(ref_data, test_data, thesaurus, groups=None):
     excess_items = set()
     match_table = {}
     for db in ref_data:
@@ -329,13 +329,24 @@ def _calculate_match_table(ref_data, test_data, thesaurus):
                 if code not in thesaurus:
                     excess_items.add(code)
                     continue
+                other_set = None
                 if code not in ref_concs:
                     marks[code] = MatchMarks.FP
+                    other_set = ref_concs
+                elif code in test_concs:
+                    marks[code] = MatchMarks.TP
                 else:
-                    if code in test_concs:
-                        marks[code] = MatchMarks.TP
-                    else:
-                        marks[code] = MatchMarks.FN
+                    marks[code] = MatchMarks.FN
+                    other_set = test_concs
+
+                if groups is None or other_set is None:
+                    continue
+                group_id = _get_group_id(code)
+                sibling_groups = next(g for g in groups if group_id in g, None)
+                if sibling_groups is None:
+                    continue
+                if any(_get_group_id(x) in sibling_groups for x in other_set):
+                    marks[code] = MatchMarks.TP
             match_table[db][rec] = marks
     return match_table, list(excess_items)
 
