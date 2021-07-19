@@ -342,7 +342,7 @@ def _calculate_match_table(ref_data, test_data, thesaurus, groups=None):
                 if groups is None or other_set is None:
                     continue
                 group_id = _get_group_id(code)
-                groups_union = next(g for g in groups if group_id in g, None)
+                groups_union = next((g for g in groups if group_id in g), None)
                 if groups_union is None:
                     continue
                 if any(_get_group_id(x) in groups_union for x in other_set):
