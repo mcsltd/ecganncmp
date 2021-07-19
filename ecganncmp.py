@@ -458,5 +458,10 @@ def _print_excess_conclusions(items):
     print("")
 
 
+def _parse_group_unions(path):
+    data = _read_json(path)
+    return [set(x) for x in data[Text.GROUPS]]
+
+
 if __name__ == "__main__":
     main()
