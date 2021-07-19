@@ -104,6 +104,8 @@ def _parse_args(args):
                         help="Enable report for conclusion groups")
     parser.add_argument("-l", "--lang", default="en", choices=["en", "ru"],
                         help="Select report language (default: %(default)s)")
+    parser.add_argument("-u", "--group_unions",
+                        help="Path to file with group unions")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
@@ -114,7 +116,7 @@ def _parse_args(args):
         data.summary,
         data.groups,
         data.lang,
-        None
+        _parse_group_unions(data.group_unions)
     )
 
 
