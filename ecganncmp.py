@@ -459,6 +459,8 @@ def _print_excess_conclusions(items):
 
 
 def _parse_group_unions(path):
+    if path is None:
+        return None
     data = _read_json(path)
     return [set(x) for x in data[Text.GROUPS]]
 
