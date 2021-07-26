@@ -155,7 +155,8 @@ def _print_report(result, input_data):
         _print_stats(stats, _("Summary"), 2)
     if input_data.groups_report:
         _print_groups_report(
-            result.marks_table, input_data.thesaurus.data, input_data.knorm)
+            result.marks_table, input_data.thesaurus.data, input_data.knorm,
+            input_data.group_unions)
     if footer:
         print(footer)
 
@@ -215,27 +216,29 @@ def _print_stats(stats, title="", indent=0, required_group_missed=False):
     print("")
 
 
-def _print_groups_report(marks_table, thesaurus, knorm):
+def _print_groups_report(marks_table, thesaurus, knorm, unions=None):
     item_groups = {}
-    group_names = {}
     group_marks = OrderedDict()
     for group in thesaurus[Text.GROUPS]:
         group_id = group[Text.ID]
-        group_names[group_id] = group[Text.NAME]
-        group_marks[group_id] = []
+        union_name = None
+        if unions is not None:
+            union_name, _ = _select_group_union(group_id, unions)
+        name = union_name or group[Text.NAME]
+        group_marks[name] = []
         for conc in group[Text.REPORTS]:
-            item_groups[conc[Text.ID]] = group_id
+            item_groups[conc[Text.ID]] = name
 
     for db in marks_table:
         for rec in marks_table[db]:
             for code, mark in marks_table[db][rec].items():
                 group = item_groups[code]
                 group_marks[group].append(mark)
-    for group_id in group_marks:
-        if not group_marks[group_id]:
+    for gname in group_marks:
+        if not group_marks[gname]:
             continue
-        group_stats = _marks_to_stats(group_marks[group_id], knorm)
-        _print_stats(group_stats, group_names[group_id], 2)
+        group_stats = _marks_to_stats(group_marks[gname], knorm)
+        _print_stats(group_stats, gname, 2)
 
 
 def _is_debug():
@@ -346,8 +349,7 @@ def _calculate_match_table(ref_data, test_data, thesaurus, group_unions=None):
                 if group_unions is None or other_set is None:
                     continue
                 group_id = _get_group_id(code)
-                groups_union = next((gu for gu in group_unions.values()
-                                     if group_id in gu), None)
+                _, groups_union = _select_group_union(group_id, group_unions)
                 if groups_union is None:
                     continue
                 if any(_get_group_id(x) in groups_union for x in other_set):
@@ -373,11 +375,11 @@ def _check_required_groups(test_data):
     return results
 
 
-def _get_group_id(conclision_id):
-    last_point = conclision_id.rfind(".")
+def _get_group_id(conclusion_id):
+    last_point = conclusion_id.rfind(".")
     if last_point < 0:
         return None
-    return conclision_id[:last_point]
+    return conclusion_id[:last_point]
 
 
 def _calculate_stats(match_marks, knorm):
@@ -466,6 +468,11 @@ def _parse_group_unions(path):
         return None
     data = _read_json(path)
     return {k: set(v) for k, v in data[Text.GROUPS].items()}
+
+
+def _select_group_union(group_id, unions):
+    return next((gu for gu in unions.items()
+                 if group_id in gu[1]), (None, None))
 
 
 if __name__ == "__main__":
