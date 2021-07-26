@@ -22,7 +22,8 @@ class Text():
     THESAURUS_LABEL = "thesaurus"
 
 
-InputData = namedtuple("InputData", ["ref_path", "test_paths", "thesaurus"])
+InputData = namedtuple(
+    "InputData", ["ref_path", "test_paths", "thesaurus", "group_unions"])
 
 
 Thesaurus = namedtuple("Thesaurus", ["label", "items"])
@@ -42,8 +43,10 @@ class Error(Exception):
 def main():
     try:
         input_data = _parse_args(os.sys.argv)
-        result = _compare(input_data)
-        _write_report(result, input_data)
+        marked_codes = _compare(input_data)
+        table = _create_statements_table(
+            marked_codes, input_data.thesaurus.items)
+        _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
     except Exception as exc:
@@ -67,11 +70,14 @@ def _parse_args(args):
     required_group = parser.add_argument_group("required named arguments")
     required_group.add_argument(
         "-t", "--thesaurus", required=True, help="Path to thesaurus")
+    parser.add_argument("-u", "--group_unions",
+                        help="Path to file with group unions")
     data = parser.parse_args(args[1:])
     return InputData(
         data.ref_path,
         data.test_paths,
         _parse_thesaurus(data.thesaurus),
+        _parse_group_unions(data.group_unions)
     )
 
 
@@ -102,8 +108,7 @@ def _compare(input_data):
     test_data = _read_table(thesaurus_label, *input_data.test_paths)
     if not ref_data or not test_data:
         raise Error("Input files not found")
-    marks = _compare_statements(ref_data, test_data)
-    return _count_marks(marks)
+    return _compare_statements(ref_data, test_data, input_data.group_unions)
 
 
 def _read_table(thesaurus, *paths):
@@ -164,7 +169,7 @@ def _read_json_folder(dirname):
     return results
 
 
-def _compare_statements(ref_data, test_data):
+def _compare_statements(ref_data, test_data, group_unions=None):
     marks = defaultdict(list)
     for db in ref_data:
         if db not in test_data:
@@ -176,34 +181,34 @@ def _compare_statements(ref_data, test_data):
             test_concs = set(test_data[db][rec])
             all_concs = ref_concs.union(test_concs)
             for code in all_concs:
-                mark = None
+                other_set = None
                 if code not in ref_concs:
                     mark = MatchMarks.FP
+                    other_set = ref_concs
                 elif code in test_concs:
                     mark = MatchMarks.TP
                 else:
                     mark = MatchMarks.FN
+                    other_set = test_concs
                 marks[code].append(mark)
-    return dict(marks)
+
+                if group_unions is None or other_set is None:
+                    continue
+                group_id = _get_group_id(code)
+                _, groups_union = _select_group_union(group_id, group_unions)
+                if groups_union is None:
+                    continue
+                if any(_get_group_id(x) in groups_union for x in other_set):
+                    marks[code][-1] = MatchMarks.TP
+    return _count_marks(marks)
 
 
 def _count_marks(all_marks):
     return {code: dict(Counter(marks)) for code, marks in all_marks.items()}
 
 
-def _write_report(result, input_data, filename="report.xlsx"):
-    thesaurus = input_data.thesaurus.items
-    table = None
-    for code, text in thesaurus.items():
-        code_marks = result.get(code)
-        if code_marks is None:
-            continue
-        stats = _marks_to_stats(code_marks)
-        if table is None:
-            table = pandas.DataFrame(columns=stats.keys())
-        table.loc[text] = stats
-    temp = {c: 3 for c in table.columns}
-    table.astype(float).round(temp).to_excel(filename)
+def _write_report(table, filename="report.xlsx"):
+    table.astype(float).round(3).to_excel(filename)
 
 
 def _print_warning(text):
@@ -239,6 +244,38 @@ def _marks_to_stats(marks):
 
 def _normalize_score(score, k):
     return round(score * (k + 1 / k))
+
+
+def _parse_group_unions(path):
+    if path is None:
+        return None
+    data = _read_json(path)
+    return {k: set(v) for k, v in data[Text.GROUPS].items()}
+
+
+def _get_group_id(conclusion_id):
+    last_point = conclusion_id.rfind(".")
+    if last_point < 0:
+        return None
+    return conclusion_id[:last_point]
+
+
+def _select_group_union(group_id, unions):
+    return next((gu for gu in unions.items()
+                 if group_id in gu[1]), (None, None))
+
+
+def _create_statements_table(marked_codes, thesaurus):
+    table = None
+    for code, text in thesaurus.items():
+        code_marks = marked_codes.get(code)
+        if code_marks is None:
+            continue
+        stats = _marks_to_stats(code_marks)
+        if table is None:
+            table = pandas.DataFrame(columns=stats.keys())
+        table.loc[text] = stats
+    return table
 
 
 if __name__ == "__main__":
