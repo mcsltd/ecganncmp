@@ -275,5 +275,33 @@ def _create_statements_table(code_marks, thesaurus):
     return table
 
 
+def _create_groups_table(code_marks, thesaurus, unions=None):
+    item_groups = {}
+    group_marks = OrderedDict()
+    for gname in thesaurus[Text.GROUPS]:
+        group_id = gname[Text.ID]
+        union_name = None
+        if unions is not None:
+            union_name, _ = _select_group_union(group_id, unions)
+        name = union_name or gname[Text.NAME]
+        group_marks[name] = []
+        for conc in gname[Text.REPORTS]:
+            item_groups[conc[Text.ID]] = name
+
+    for code, marks in code_marks:
+        gname = item_groups[code]
+        group_marks[gname].append(marks)
+
+    table = None
+    for gname in group_marks:
+        if not group_marks[gname]:
+            continue
+        stats = _marks_to_stats(group_marks[gname])
+        if table is None:
+            table = pandas.DataFrame(columns=stats.keys())
+        table.loc[gname] = stats
+    return table
+
+
 if __name__ == "__main__":
     main()
