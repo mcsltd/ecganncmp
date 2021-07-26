@@ -26,7 +26,7 @@ InputData = namedtuple(
     "InputData", ["ref_path", "test_paths", "thesaurus", "group_unions"])
 
 
-Thesaurus = namedtuple("Thesaurus", ["label", "items"])
+Thesaurus = namedtuple("Thesaurus", ["label", "items", "data"])
 
 
 class MatchMarks(IntEnum):
@@ -44,8 +44,12 @@ def main():
     try:
         input_data = _parse_args(os.sys.argv)
         code_marks = _compare(input_data)
-        table = _create_statements_table(
-            code_marks, input_data.thesaurus.items)
+        thesaurus = input_data.thesaurus
+        if input_data.group_unions is None:
+            table = _create_statements_table(code_marks, thesaurus.items)
+        else:
+            table = _create_groups_table(
+                code_marks, thesaurus.data, input_data.group_unions)
         _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
@@ -87,7 +91,7 @@ def _parse_thesaurus(filename):
     for group in data[Text.GROUPS]:
         for ann in group[Text.REPORTS]:
             items[ann[Text.ID]] = ann[Text.NAME]
-    return Thesaurus(data[Text.THESAURUS_LABEL], items)
+    return Thesaurus(data[Text.THESAURUS_LABEL], items, data)
 
 
 def _read_json(filename, ordered=False):
@@ -288,7 +292,7 @@ def _create_groups_table(code_marks, thesaurus, unions=None):
         for conc in gname[Text.REPORTS]:
             item_groups[conc[Text.ID]] = name
 
-    for code, marks in code_marks:
+    for code, marks in code_marks.items():
         gname = item_groups[code]
         group_marks[gname].append(marks)
 
