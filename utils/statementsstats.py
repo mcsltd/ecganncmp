@@ -213,5 +213,36 @@ def _print_warning(text):
     os.sys.stderr.write("Warning! {0}\n".format(text))
 
 
+def _marks_to_stats(marks):
+    tp = marks.get(MatchMarks.TP, 0)
+    fp = marks.get(MatchMarks.FP, 0)
+    fn = marks.get(MatchMarks.FN, 0)
+    precision = 0
+    recall = 0
+    fscore = 0
+
+    if tp > 0 or fp > 0:
+        precision = tp / (tp + fp)
+    if tp > 0 or fn > 0:
+        recall = tp / (tp + fn)
+    if precision > 0 or recall > 0:
+        fscore = 2 * precision * recall / (precision + recall)
+
+    result = OrderedDict()
+    result["TP"] = tp
+    result["FP"] = fp
+    result["FN"] = fn
+    result["Precision"] = precision
+    result["Recall"] = recall
+    result["F-score"] = fscore
+    result["F-score-5"] = _normalize_score(fscore, 5)
+    result["F-score-100"] = _normalize_score(fscore, 100)
+    return result
+
+
+def _normalize_score(score, k):
+    return round(score * (k + 1 / k))
+
+
 if __name__ == "__main__":
     main()
