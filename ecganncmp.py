@@ -313,7 +313,7 @@ def _read_json_folder(dirname):
     return results
 
 
-def _calculate_match_table(ref_data, test_data, thesaurus, groups=None):
+def _calculate_match_table(ref_data, test_data, thesaurus, group_unions=None):
     excess_items = set()
     match_table = {}
     for db in ref_data:
@@ -343,10 +343,11 @@ def _calculate_match_table(ref_data, test_data, thesaurus, groups=None):
                     marks[code] = MatchMarks.FN
                     other_set = test_concs
 
-                if groups is None or other_set is None:
+                if group_unions is None or other_set is None:
                     continue
                 group_id = _get_group_id(code)
-                groups_union = next((g for g in groups if group_id in g), None)
+                groups_union = next((gu for gu in group_unions.values()
+                                     if group_id in gu), None)
                 if groups_union is None:
                     continue
                 if any(_get_group_id(x) in groups_union for x in other_set):
@@ -464,7 +465,7 @@ def _parse_group_unions(path):
     if path is None:
         return None
     data = _read_json(path)
-    return [set(x) for x in data[Text.GROUPS]]
+    return {k: set(v) for k, v in data[Text.GROUPS].items()}
 
 
 if __name__ == "__main__":
