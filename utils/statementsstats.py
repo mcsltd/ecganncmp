@@ -43,9 +43,9 @@ class Error(Exception):
 def main():
     try:
         input_data = _parse_args(os.sys.argv)
-        marked_codes = _compare(input_data)
+        code_marks = _compare(input_data)
         table = _create_statements_table(
-            marked_codes, input_data.thesaurus.items)
+            code_marks, input_data.thesaurus.items)
         _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
@@ -200,11 +200,7 @@ def _compare_statements(ref_data, test_data, group_unions=None):
                     continue
                 if any(_get_group_id(x) in groups_union for x in other_set):
                     marks[code][-1] = MatchMarks.TP
-    return _count_marks(marks)
-
-
-def _count_marks(all_marks):
-    return {code: dict(Counter(marks)) for code, marks in all_marks.items()}
+    return marks
 
 
 def _write_report(table, filename="report.xlsx"):
@@ -216,9 +212,10 @@ def _print_warning(text):
 
 
 def _marks_to_stats(marks):
-    tp = marks.get(MatchMarks.TP, 0)
-    fp = marks.get(MatchMarks.FP, 0)
-    fn = marks.get(MatchMarks.FN, 0)
+    counts = Counter(marks)
+    tp = counts.get(MatchMarks.TP, 0)
+    fp = counts.get(MatchMarks.FP, 0)
+    fn = counts.get(MatchMarks.FN, 0)
     precision = 0
     recall = 0
     fscore = 0
@@ -265,13 +262,13 @@ def _select_group_union(group_id, unions):
                  if group_id in gu[1]), (None, None))
 
 
-def _create_statements_table(marked_codes, thesaurus):
+def _create_statements_table(code_marks, thesaurus):
     table = None
     for code, text in thesaurus.items():
-        code_marks = marked_codes.get(code)
-        if code_marks is None:
+        marks = code_marks.get(code)
+        if marks is None:
             continue
-        stats = _marks_to_stats(code_marks)
+        stats = _marks_to_stats(marks)
         if table is None:
             table = pandas.DataFrame(columns=stats.keys())
         table.loc[text] = stats
