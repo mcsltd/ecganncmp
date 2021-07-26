@@ -193,20 +193,17 @@ def _count_marks(all_marks):
 
 def _write_report(result, input_data, filename="report.xlsx"):
     thesaurus = input_data.thesaurus.items
-    table = pandas.DataFrame(columns=MatchMarks)
+    table = None
     for code, text in thesaurus.items():
         code_marks = result.get(code)
         if code_marks is None:
             continue
-        table.loc[text] = code_marks
-    ref_annotator = os.path.basename(input_data.ref_path)
-    test_annotators = map(os.path.basename, input_data.test_paths)
-    table = table.sort_index(axis=1).fillna(0).rename(columns={
-        MatchMarks.TP: "Оба",
-        MatchMarks.FP: "Только " + ", ".join(test_annotators),
-        MatchMarks.FN: "Только " + ref_annotator
-    })
-    table.to_excel(filename)
+        stats = _marks_to_stats(code_marks)
+        if table is None:
+            table = pandas.DataFrame(columns=stats.keys())
+        table.loc[text] = stats
+    temp = {c: 3 for c in table.columns}
+    table.astype(float).round(temp).to_excel(filename)
 
 
 def _print_warning(text):
