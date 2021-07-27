@@ -112,7 +112,8 @@ def _compare(input_data):
     test_data = _read_table(thesaurus_label, *input_data.test_paths)
     if not ref_data or not test_data:
         raise Error("Input files not found")
-    return _compare_statements(ref_data, test_data, input_data.group_unions)
+    return _compare_statements(ref_data, test_data, input_data.thesaurus.items,
+                               input_data.group_unions)
 
 
 def _read_table(thesaurus, *paths):
@@ -173,7 +174,8 @@ def _read_json_folder(dirname):
     return results
 
 
-def _compare_statements(ref_data, test_data, group_unions=None):
+def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
+    excess_items = set()
     marks = defaultdict(list)
     for db in ref_data:
         if db not in test_data:
@@ -185,6 +187,11 @@ def _compare_statements(ref_data, test_data, group_unions=None):
             test_concs = set(test_data[db][rec])
             all_concs = ref_concs.union(test_concs)
             for code in all_concs:
+                if code in excess_items:
+                    continue
+                if code not in thesaurus:
+                    excess_items.add(code)
+                    continue
                 other_set = None
                 if code not in ref_concs:
                     mark = MatchMarks.FP
@@ -294,7 +301,7 @@ def _create_groups_table(code_marks, thesaurus, unions=None):
 
     for code, marks in code_marks.items():
         gname = item_groups[code]
-        group_marks[gname].append(marks)
+        group_marks[gname] += marks
 
     table = None
     for gname in group_marks:
