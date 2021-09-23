@@ -44,12 +44,8 @@ def main():
     try:
         input_data = _parse_args(os.sys.argv)
         code_marks = _compare(input_data)
-        thesaurus = input_data.thesaurus
-        if input_data.group_unions is None:
-            table = _create_statements_table(code_marks, thesaurus.items)
-        else:
-            table = _create_groups_table(
-                code_marks, thesaurus.data, input_data.group_unions)
+        table = _create_report_table(
+            code_marks, input_data.thesaurus, input_data.group_unions)
         _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
@@ -267,6 +263,14 @@ def _parse_group_unions(path):
 def _select_group_union(group_id, unions):
     return next((gu for gu in unions.items()
                  if group_id in gu[1]), (None, None))
+
+
+def _create_report_table(code_marks, thesaurus, unions=None):
+    if unions is None:
+        table = _create_statements_table(code_marks, thesaurus.items)
+    else:
+        table = _create_groups_table(code_marks, thesaurus.data, unions)
+    return table
 
 
 def _create_statements_table(code_marks, thesaurus):
