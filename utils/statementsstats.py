@@ -72,6 +72,10 @@ def _parse_args(args):
         "-t", "--thesaurus", required=True, help="Path to thesaurus")
     parser.add_argument("-u", "--unions",
                         help="Path to file with group unions")
+    parser.add_argument(
+        "-s", "--strict", action="store_true",
+        help="Use only statements specified in the unions file"
+    )
     data = parser.parse_args(args[1:])
     thesaurus = _parse_thesaurus(data.thesaurus)
     return InputData(
