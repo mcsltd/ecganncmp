@@ -115,7 +115,7 @@ def _compare(input_data):
     test_data = _read_table(thesaurus_label, *input_data.test_paths)
     if not ref_data or not test_data:
         raise Error("Input files not found")
-    return _compare_statements(ref_data, test_data, input_data.thesaurus.items,
+    return _compare_statements(ref_data, test_data, input_data.thesaurus,
                                input_data.group_unions)
 
 
@@ -192,7 +192,7 @@ def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
             for code in all_concs:
                 if code in excess_items:
                     continue
-                if code not in thesaurus:
+                if code not in thesaurus.items:
                     excess_items.add(code)
                     continue
                 other_set = None
@@ -208,11 +208,11 @@ def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
 
                 if group_unions is None or other_set is None:
                     continue
-                group_id = _get_group_id(code)
+                group_id = thesaurus.groups[code]
                 _, groups_union = _select_group_union(group_id, group_unions)
                 if groups_union is None:
                     continue
-                if any(_get_group_id(x) in groups_union for x in other_set):
+                if any(thesaurus.groups[x] in groups_union for x in other_set):
                     marks[code][-1] = MatchMarks.TP
     return marks
 
@@ -262,13 +262,6 @@ def _parse_group_unions(path):
         return None
     data = _read_json(path)
     return {k: set(v) for k, v in data[Text.GROUPS].items()}
-
-
-def _get_group_id(conclusion_id):
-    last_point = conclusion_id.rfind(".")
-    if last_point < 0:
-        return None
-    return conclusion_id[:last_point]
 
 
 def _select_group_union(group_id, unions):
