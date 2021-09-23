@@ -23,7 +23,7 @@ class Text():
 
 
 InputData = namedtuple(
-    "InputData", ["ref_path", "test_paths", "thesaurus", "group_unions"])
+    "InputData", ["ref_path", "test_paths", "thesaurus", "unions"])
 
 
 Thesaurus = namedtuple("Thesaurus", ["label", "items", "data", "groups"])
@@ -45,7 +45,7 @@ def main():
         input_data = _parse_args(os.sys.argv)
         code_marks = _compare(input_data)
         table = _create_report_table(
-            code_marks, input_data.thesaurus, input_data.group_unions)
+            code_marks, input_data.thesaurus, input_data.unions)
         _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
@@ -70,14 +70,15 @@ def _parse_args(args):
     required_group = parser.add_argument_group("required named arguments")
     required_group.add_argument(
         "-t", "--thesaurus", required=True, help="Path to thesaurus")
-    parser.add_argument("-u", "--group_unions",
+    parser.add_argument("-u", "--unions",
                         help="Path to file with group unions")
     data = parser.parse_args(args[1:])
+    thesaurus = _parse_thesaurus(data.thesaurus)
     return InputData(
         data.ref_path,
         data.test_paths,
-        _parse_thesaurus(data.thesaurus),
-        _parse_group_unions(data.group_unions)
+        thesaurus,
+        _parse_code_unions(data.unions, thesaurus)
     )
 
 
@@ -111,8 +112,8 @@ def _compare(input_data):
     test_data = _read_table(thesaurus_label, *input_data.test_paths)
     if not ref_data or not test_data:
         raise Error("Input files not found")
-    return _compare_statements(ref_data, test_data, input_data.thesaurus,
-                               input_data.group_unions)
+    return _compare_statements(ref_data, test_data, input_data.thesaurus.items,
+                               input_data.unions)
 
 
 def _read_table(thesaurus, *paths):
@@ -173,7 +174,7 @@ def _read_json_folder(dirname):
     return results
 
 
-def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
+def _compare_statements(ref_data, test_data, thesaurus, code_unions=None):
     excess_items = set()
     marks = defaultdict(list)
     for db in ref_data:
@@ -188,7 +189,7 @@ def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
             for code in all_concs:
                 if code in excess_items:
                     continue
-                if code not in thesaurus.items:
+                if code not in thesaurus:
                     excess_items.add(code)
                     continue
                 other_set = None
@@ -202,13 +203,12 @@ def _compare_statements(ref_data, test_data, thesaurus, group_unions=None):
                     other_set = test_concs
                 marks[code].append(mark)
 
-                if group_unions is None or other_set is None:
+                if code_unions is None or other_set is None:
                     continue
-                group_id = thesaurus.groups[code]
-                _, groups_union = _select_group_union(group_id, group_unions)
+                _, groups_union = _select_code_union(code, code_unions)
                 if groups_union is None:
                     continue
-                if any(thesaurus.groups[x] in groups_union for x in other_set):
+                if any(x in groups_union for x in other_set):
                     marks[code][-1] = MatchMarks.TP
     return marks
 
@@ -253,16 +253,26 @@ def _normalize_score(score, k):
     return round(score * (k + 1 / k))
 
 
-def _parse_group_unions(path):
+def _parse_code_unions(path, thesaurus):
     if path is None:
         return None
-    data = _read_json(path)
-    return {k: set(v) for k, v in data[Text.GROUPS].items()}
+    groups = defaultdict(list)
+    for code, group in thesaurus.groups.items():
+        groups[group].append(code)
+    raw_unions = _read_json(path)[Text.GROUPS]
+    unions = {}
+    for name in raw_unions:
+        unions[name] = set()
+        for subitem in raw_unions[name]:
+            if isinstance(subitem, list):
+                unions[name].update(subitem)
+            else:
+                unions[name].update(groups[subitem])
+    return unions
 
 
-def _select_group_union(group_id, unions):
-    return next((gu for gu in unions.items()
-                 if group_id in gu[1]), (None, None))
+def _select_code_union(code, unions):
+    return next((gu for gu in unions.items() if code in gu[1]), (None, None))
 
 
 def _create_report_table(code_marks, thesaurus, unions=None):
@@ -292,14 +302,14 @@ def _create_groups_table(code_marks, thesaurus, unions=None):
     item_groups = {}
     group_marks = OrderedDict()
     for gname in thesaurus[Text.GROUPS]:
-        group_id = gname[Text.ID]
-        union_name = None
-        if unions is not None:
-            union_name, _ = _select_group_union(group_id, unions)
-        name = union_name or gname[Text.NAME]
-        group_marks[name] = []
         for conc in gname[Text.REPORTS]:
-            item_groups[conc[Text.ID]] = name
+            union_name = None
+            code = conc[Text.ID]
+            if unions is not None:
+                union_name, _ = _select_code_union(code, unions)
+            name = union_name or gname[Text.NAME]
+            group_marks.setdefault(name, [])
+            item_groups[code] = name
 
     for code, marks in code_marks.items():
         gname = item_groups[code]
