@@ -270,6 +270,8 @@ def _create_report_table(code_marks, thesaurus, unions=None):
         table = _create_statements_table(code_marks, thesaurus.items)
     else:
         table = _create_groups_table(code_marks, thesaurus.data, unions)
+    table.loc["TOTAL"] = _marks_to_stats(
+        mark for codes in code_marks.values() for mark in codes)
     return table
 
 
