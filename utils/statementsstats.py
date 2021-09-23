@@ -45,7 +45,8 @@ def main():
         input_data = _parse_args(os.sys.argv)
         code_marks = _compare(input_data)
         table = _create_report_table(
-            code_marks, input_data.thesaurus, input_data.unions)
+            code_marks, input_data.thesaurus, input_data.unions,
+            input_data.strict)
         _write_report(table)
     except Error as exc:
         print("Error: {0}\n".format(exc))
@@ -266,7 +267,7 @@ def _parse_code_unions(path, thesaurus):
     for code, group in thesaurus.groups.items():
         groups[group].append(code)
     raw_unions = _read_json(path)[Text.GROUPS]
-    unions = {}
+    unions = OrderedDict()
     for name in raw_unions:
         unions[name] = set()
         for subitem in raw_unions[name]:
@@ -278,14 +279,17 @@ def _parse_code_unions(path, thesaurus):
 
 
 def _select_code_union(code, unions):
+    if unions is None:
+        return (None, None)
     return next((gu for gu in unions.items() if code in gu[1]), (None, None))
 
 
-def _create_report_table(code_marks, thesaurus, unions=None):
+def _create_report_table(code_marks, thesaurus, unions=None, strict=False):
     if unions is None:
         table = _create_statements_table(code_marks, thesaurus.items)
     else:
-        table = _create_groups_table(code_marks, thesaurus.data, unions)
+        table = _create_groups_table(
+            code_marks, thesaurus.data, unions, strict)
     table.loc["TOTAL"] = _marks_to_stats(
         mark for codes in code_marks.values() for mark in codes)
     return table
@@ -304,22 +308,12 @@ def _create_statements_table(code_marks, thesaurus):
     return table
 
 
-def _create_groups_table(code_marks, thesaurus, unions=None):
-    item_groups = {}
+def _create_groups_table(code_marks, thesaurus, unions=None, strict=False):
     group_marks = OrderedDict()
-    for gname in thesaurus[Text.GROUPS]:
-        for conc in gname[Text.REPORTS]:
-            union_name = None
-            code = conc[Text.ID]
-            if unions is not None:
-                union_name, _ = _select_code_union(code, unions)
-            name = union_name or gname[Text.NAME]
-            group_marks.setdefault(name, [])
-            item_groups[code] = name
-
-    for code, marks in code_marks.items():
-        gname = item_groups[code]
-        group_marks[gname] += marks
+    if unions is not None and strict:
+        _fill_strict_unions_marks(group_marks, code_marks, unions)
+    else:
+        _fill_group_marks(group_marks, code_marks, thesaurus, unions)
 
     table = None
     for gname in group_marks:
@@ -330,6 +324,20 @@ def _create_groups_table(code_marks, thesaurus, unions=None):
             table = pandas.DataFrame(columns=stats.keys())
         table.loc[gname] = stats
     return table
+
+
+def _fill_group_marks(group_marks, code_marks, thesaurus, unions):
+    for group in thesaurus[Text.GROUPS]:
+        for conc in group[Text.REPORTS]:
+            code = conc[Text.ID]
+            name = _select_code_union(code, unions)[0] or group[Text.NAME]
+            group_marks.setdefault(name, []).extend(code_marks[code])
+
+
+def _fill_strict_unions_marks(group_marks, code_marks, unions):
+    for name in unions:
+        for code in unions[name]:
+            group_marks.setdefault(name, []).extend(code_marks[code])
 
 
 def _ignore_statement(code, thesaurus, unions=None, strict=False):
