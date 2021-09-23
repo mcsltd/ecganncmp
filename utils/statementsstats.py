@@ -23,7 +23,7 @@ class Text():
 
 
 InputData = namedtuple(
-    "InputData", ["ref_path", "test_paths", "thesaurus", "unions"])
+    "InputData", ["ref_path", "test_paths", "thesaurus", "unions", "strict"])
 
 
 Thesaurus = namedtuple("Thesaurus", ["label", "items", "data", "groups"])
@@ -82,7 +82,8 @@ def _parse_args(args):
         data.ref_path,
         data.test_paths,
         thesaurus,
-        _parse_code_unions(data.unions, thesaurus)
+        _parse_code_unions(data.unions, thesaurus),
+        data.strict
     )
 
 
@@ -117,7 +118,7 @@ def _compare(input_data):
     if not ref_data or not test_data:
         raise Error("Input files not found")
     return _compare_statements(ref_data, test_data, input_data.thesaurus.items,
-                               input_data.unions)
+                               input_data.unions, input_data.strict)
 
 
 def _read_table(thesaurus, *paths):
@@ -178,7 +179,8 @@ def _read_json_folder(dirname):
     return results
 
 
-def _compare_statements(ref_data, test_data, thesaurus, code_unions=None):
+def _compare_statements(ref_data, test_data, thesaurus, code_unions=None,
+                        strict=False):
     excess_items = set()
     marks = defaultdict(list)
     for db in ref_data:
@@ -193,7 +195,7 @@ def _compare_statements(ref_data, test_data, thesaurus, code_unions=None):
             for code in all_concs:
                 if code in excess_items:
                     continue
-                if code not in thesaurus:
+                if _ignore_statement(code, thesaurus, code_unions, strict):
                     excess_items.add(code)
                     continue
                 other_set = None
@@ -328,6 +330,14 @@ def _create_groups_table(code_marks, thesaurus, unions=None):
             table = pandas.DataFrame(columns=stats.keys())
         table.loc[gname] = stats
     return table
+
+
+def _ignore_statement(code, thesaurus, unions=None, strict=False):
+    if code not in thesaurus:
+        return True
+    if unions is not None and strict:
+        return _select_code_union(code, unions)[0] is None
+    return False
 
 
 if __name__ == "__main__":
