@@ -26,7 +26,7 @@ InputData = namedtuple(
     "InputData", ["ref_path", "test_paths", "thesaurus", "group_unions"])
 
 
-Thesaurus = namedtuple("Thesaurus", ["label", "items", "data"])
+Thesaurus = namedtuple("Thesaurus", ["label", "items", "data", "groups"])
 
 
 class MatchMarks(IntEnum):
@@ -88,10 +88,13 @@ def _parse_args(args):
 def _parse_thesaurus(filename):
     data = _read_json(filename, ordered=True)
     items = OrderedDict()
+    groups = {}
     for group in data[Text.GROUPS]:
         for ann in group[Text.REPORTS]:
-            items[ann[Text.ID]] = ann[Text.NAME]
-    return Thesaurus(data[Text.THESAURUS_LABEL], items, data)
+            ann_id = ann[Text.ID]
+            items[ann_id] = ann[Text.NAME]
+            groups[ann_id] = group[Text.ID]
+    return Thesaurus(data[Text.THESAURUS_LABEL], items, data, groups)
 
 
 def _read_json(filename, ordered=False):
