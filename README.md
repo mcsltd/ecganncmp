@@ -45,7 +45,7 @@ See below for arguments details.
 ## Output examples
 
 The following [terms](https://en.wikipedia.org/wiki/Confusion_matrix) are used when comparing annotations:
-- TP &ndash; true positiv,  
+- TP &ndash; true positive,  
 - FP &ndash; false positive,
 - FN &ndash; false negative,
 - Precision &ndash; positive predictive value, 
@@ -63,6 +63,12 @@ Also used the `F-score` or `F` &ndash; total score of annotations match,
 If the `--knorm` flag is set, the normalized F-score is calculated:
 
     NFS = round((knorm + 1 / knorm) * F)
+
+### Group unions
+
+In command line arguments, you can specify a file with groups for comparison. Statements from the same group are considered conditionally equal.
+So TP &ndash; (true positive) used when statements belong to the same group.
+
 
 ### Main report
 
