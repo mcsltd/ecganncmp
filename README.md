@@ -16,7 +16,7 @@ Python (3.4 or later) must be installed on the user's computer to run the progra
 `ref_path`, `test_path` and `--thesaurus` are required arguments. Optional arguments and short description are given below (help message)
 
     usage: ecganncmp.py [-h] -t THESAURUS [-f] [--knorm KNORM] [-s] [-g]
-                        [-l {en,ru}]
+                        [-l {en,ru}] [-u GROUP_UNIONS]
                         ref_path test_paths [test_paths ...]
 
     Annotations comparing
@@ -33,6 +33,8 @@ Python (3.4 or later) must be installed on the user's computer to run the progra
     -g, --groups          Enable report for conclusion groups
     -l {en,ru}, --lang {en,ru}
                             Select report language (default: en)
+    -u GROUP_UNIONS, --group_unions GROUP_UNIONS
+                            Path to file with group unions
 
     required named arguments:
     -t THESAURUS, --thesaurus THESAURUS
